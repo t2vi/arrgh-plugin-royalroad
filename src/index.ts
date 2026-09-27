@@ -1,14 +1,16 @@
+import type { PluginContext, PluginInfo } from 'arrgh-plugin-sdk'
+import { version } from '../package.json'
 import * as rr from './royalroad'
 
-export const info = {
+export const info: PluginInfo = {
   id: 'royalroad',
-  version: '1.0.0',
   name: 'Royal Road',
+  version,
   default_explicit: false,
   content_types: ['novel'],
 }
 
-export function init(_ctx: unknown): void {
+export function init(_ctx: PluginContext): void {
   // Direct fetch — no browser needed
 }
 
