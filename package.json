@@ -1,6 +1,6 @@
 {
   "name": "arrgh-plugin-royalroad",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Royal Road source plugin for *ARRgh — English-original web novels",
   "license": "GPL-3.0-only",
   "private": true,

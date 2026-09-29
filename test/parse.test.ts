@@ -141,15 +141,36 @@ describe('royalroad', () => {
     it('no-cover placeholder → null cover_url', async () => {
       const html = RR_SEARCH_HTML.replace(/src="https:\/\/www\.royalroadcdn\.com[^"]*"/, 'src="/dist/img/nocover-new-min.png"')
       vi.stubGlobal('fetch', mockFetch({ 'royalroad.com/fictions/search': { text: html } }))
-      const [r] = await royalroad.search('x')
+      const [r] = await royalroad.search('primal hunter')
       expect(r.cover_url).toBeNull()
     })
 
     it('other relative cover paths are made absolute', async () => {
       const html = RR_SEARCH_HTML.replace(/src="https:\/\/www\.royalroadcdn\.com[^"]*"/, 'src="/covers/36049.jpg"')
       vi.stubGlobal('fetch', mockFetch({ 'royalroad.com/fictions/search': { text: html } }))
-      const [r] = await royalroad.search('x')
+      const [r] = await royalroad.search('primal hunter')
       expect(r.cover_url).toBe('https://www.royalroad.com/covers/36049.jpg')
+    })
+
+    // GH arrgh#255: royalroad.com's own search matches loosely (likely across
+    // description/tags too) — a query full of common words returned a page of
+    // unrelated fictions instead of few/none. Filter to title-relevant results.
+    it('filters out a result whose title does not relate to a common-word query', async () => {
+      vi.stubGlobal('fetch', mockFetch({ 'royalroad.com/fictions/search': { text: RR_SEARCH_HTML } }))
+      const results = await royalroad.search('I Have a Task Log')
+      expect(results).toHaveLength(0)
+    })
+
+    it('keeps a result whose title contains every significant query word', async () => {
+      vi.stubGlobal('fetch', mockFetch({ 'royalroad.com/fictions/search': { text: RR_SEARCH_HTML } }))
+      const results = await royalroad.search('primal hunter')
+      expect(results).toHaveLength(1)
+    })
+
+    it('keeps everything when the query is entirely stopwords (nothing to filter on)', async () => {
+      vi.stubGlobal('fetch', mockFetch({ 'royalroad.com/fictions/search': { text: RR_SEARCH_HTML } }))
+      const results = await royalroad.search('the a of')
+      expect(results).toHaveLength(1)
     })
   })
 

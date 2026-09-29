@@ -37,6 +37,32 @@ async function fetchHtml(url: string): Promise<string> {
   return res.text()
 }
 
+// Royal Road's own search (`?title=...&orderBy=relevance`) matches loosely — likely across
+// description/tags too, not just title — so a query full of common words ("I Have a Task Log")
+// comes back with a page of largely-unrelated fictions instead of few/none (GH arrgh#255).
+// Filter to results whose title actually relates to the query: every significant query word
+// (after stripping common stopwords) must appear in the title.
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'for', 'and', 'or', 'but',
+  'is', 'it', 'i', 'have', 'has', 'had', 'my', 'your', 'his', 'her', 'its',
+  'this', 'that', 'with', 'as', 'be', 'are', 'was', 'were',
+])
+
+function normalizeWords(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+}
+
+function isRelevant(title: string, query: string): boolean {
+  const significant = normalizeWords(query).filter((w) => !STOPWORDS.has(w))
+  if (significant.length === 0) return true // nothing left to filter on — don't discard everything
+  const normTitle = normalizeWords(title).join(' ')
+  return significant.every((w) => normTitle.includes(w))
+}
+
 export interface SearchResult {
   id: string
   title: string
@@ -97,7 +123,7 @@ export async function search(query: string): Promise<SearchResult[]> {
     results.push({ id, title, description: desc, cover_url: cover, status: 'ongoing', author: null, year: null, tags })
   })
 
-  return results
+  return results.filter((r) => isRelevant(r.title, query))
 }
 
 export async function chapters(fictionId: string): Promise<ChapterResult[]> {
